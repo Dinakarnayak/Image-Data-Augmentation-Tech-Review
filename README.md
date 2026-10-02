@@ -1,72 +1,136 @@
-# Image Data Augmentation — Research Companion
+# 🧬 Image Data Augmentation — Research Companion
 
-**CO3091/CO7091 · Computational Intelligence and Software Engineering**
+<p align="center">
+  <strong>CO3091 / CO7091 · Computational Intelligence and Software Engineering</strong><br>
+  Paper-based experimental laboratory for image augmentation research
+</p>
 
-## Research basis
-
-This repository is built around the source paper:
-
-**Shorten, C. & Khoshgoftaar, T. M. (2019). _A survey on Image Data Augmentation for Deep Learning_. Journal of Big Data, 6, 60.**
-
-The software is a **paper-based experimental companion**. It is not presented as a reproduction of the entire survey.
-
-The survey describes augmentation as a data-space solution to limited training data and discusses a broad range of methods, including geometric transformations, colour-space augmentation, kernel filters, image mixing, random erasing, feature-space augmentation, adversarial training, GAN-based augmentation, neural style transfer and meta-learning. It also discusses test-time augmentation, resolution, dataset size and curriculum learning.
+<p align="center">
+  <a href="https://github.com/Dinakarnayak/Image-Data-Augmentation-Tech-Review">GitHub</a> ·
+  <a href="https://colab.research.google.com/github/Dinakarnayak/Image-Data-Augmentation-Tech-Review/blob/main/notebooks/Image_Data_Augmentation_Research_Lab_Colab.ipynb">Google Colab</a>
+</p>
 
 ---
 
-## Research architecture
+## 📚 Research basis
+
+This repository is built around:
+
+> **Shorten, C. & Khoshgoftaar, T. M. (2019). _A survey on Image Data Augmentation for Deep Learning_. Journal of Big Data, 6, 60.**
+
+The project is an **experimental companion to the survey**, not a claim to reproduce every method or numerical result reported in the paper.
+
+The survey discusses geometric transformations, colour-space transformations, kernel filters, mixing images, random erasing, feature-space augmentation, adversarial training, GAN-based augmentation, neural style transfer and meta-learning. It also discusses test-time augmentation, resolution, dataset size and curriculum learning.
+
+---
+
+## 🚀 What the project provides
+
+| Module | Purpose |
+|---|---|
+| 🎛️ **Playground** | Interactive exploration of individual augmentation operations |
+| 🔗 **Policy Pipeline** | Compose stochastic multi-stage augmentation policies |
+| 🧬 **Policy Search** | Monte-Carlo exploration of stochastic policies |
+| 📈 **Sensitivity** | Examine how augmentation magnitude changes image-level diagnostics |
+| 📦 **Dataset Generator** | Generate augmented image packages with a manifest |
+| 🧪 **Experiment Matrix** | Repeated, controlled comparisons across augmentation operations |
+| 🔬 **Diagnostics** | RGB statistics, histograms and image-change measurements |
+
+---
+
+## 🧠 Paper → Implementation traceability
+
+| Survey concept | Repository implementation | Status |
+|---|---|---|
+| Geometric transformations | Streamlit + Colab | ✅ Implemented |
+| Colour-space transformations | Streamlit + Colab | ✅ Implemented |
+| Kernel filters | Streamlit | ✅ Implemented |
+| Random erasing | Streamlit + Colab | ✅ Implemented |
+| Mixing images | Policy/dataset workflow | 🟡 Demonstration |
+| Feature-space augmentation | Documentation | ⚪ Not reproduced |
+| Adversarial training | Documentation | ⚪ Not reproduced |
+| GAN-based augmentation | Documentation | ⚪ Not reproduced |
+| Neural style transfer | Documentation | ⚪ Not reproduced |
+| Meta-learning | Stochastic policy-search extension | 🟡 Experimental extension |
+| Test-time augmentation | Future benchmark | 🔵 Planned |
+| Dataset-size effects | Future benchmark | 🔵 Planned |
+| Curriculum learning | Documentation | ⚪ Not implemented |
+
+---
+
+## 🔬 Research workflow
 
 ```text
-                 SOURCE PAPER
-                     │
-                     ▼
-              PAPER TAXONOMY
-                     │
-          ┌──────────┴──────────┐
-          ▼                     ▼
-     DATA WARPING          OVERSAMPLING
-          │                     │
-          ▼                     ▼
-   Image-space methods     Synthetic methods
-          │                     │
-          └──────────┬──────────┘
-                     ▼
-            CONTROLLED EXPERIMENT
-                     │
-                     ▼
-          QUANTITATIVE ANALYSIS
-                     │
-                     ▼
-             MODEL BENCHMARK
-                     │
-                     ▼
-          ABLATION / SENSITIVITY
-                     │
-                     ▼
-        COMPARISON WITH LITERATURE
+SOURCE PAPER → TAXONOMY → IMPLEMENTATION
+       ↓
+CONTROLLED EXPERIMENT → IMAGE DIAGNOSTICS
+       ↓
+MODEL BENCHMARK → ABLATION / SENSITIVITY
+       ↓
+LITERATURE COMPARISON
 ```
-
-## Paper-to-project traceability
-
-| Paper concept | Project component | Current status |
-|---|---|---|
-| Geometric transformations | Streamlit + Colab | Implemented |
-| Colour-space transformations | Streamlit + Colab | Implemented |
-| Kernel filters | Streamlit | Implemented |
-| Random erasing | Streamlit + Colab | Implemented |
-| Mixing images | Streamlit pipeline | Demonstration |
-| Feature-space augmentation | Research documentation | Not claimed as reproduced |
-| Adversarial training | Research documentation | Not claimed as reproduced |
-| GAN augmentation | Research documentation | Not claimed as reproduced |
-| Neural style transfer | Research documentation | Not claimed as reproduced |
-| Meta-learning | Stochastic policy-search extension | Experimental extension |
-| Test-time augmentation | Future benchmark | Planned |
-| Dataset-size effects | Future benchmark | Planned |
-| Curriculum learning | Research documentation | Not implemented |
 
 ---
 
-## Repository structure
+## 🧪 Experiment Matrix
+
+The application now supports controlled image-level comparisons across selected augmentation operations.
+
+It can:
+
+- run repeated experiments;
+- record random seeds;
+- calculate MSE, MAE and PSNR;
+- calculate histogram distance;
+- measure edge-density change;
+- report mean and standard deviation;
+- display individual runs;
+- generate an experiment identifier;
+- export CSV results;
+- export JSON metadata.
+
+**Important:** these metrics measure image-space change. They do **not** establish classification accuracy, improved CNN generalisation, semantic validity, label preservation, or that one augmentation policy is superior.
+
+---
+
+## 🧩 Evidence discipline
+
+The repository separates:
+
+### Literature evidence
+Findings and numerical results reported by the source paper.
+
+### Reproduction
+An implementation intended to recreate a documented method or experimental setup sufficiently to justify that claim.
+
+### Extension
+New experiments developed specifically for this repository, including stochastic policy search, sensitivity analysis and controlled experiment matrices.
+
+Newly generated results must not be presented as results from the source paper.
+
+---
+
+## 📊 Reproducibility
+
+Record, where applicable:
+
+- dataset and version;
+- train/validation/test split;
+- model architecture;
+- augmentation policy;
+- random seed(s);
+- software/library versions;
+- training configuration;
+- evaluation metrics;
+- repetitions;
+- mean and standard deviation;
+- confidence intervals where appropriate.
+
+Keep the test set isolated from training augmentation.
+
+---
+
+## 🏗️ Repository structure
 
 ```text
 Image-Data-Augmentation-Tech-Review/
@@ -83,114 +147,74 @@ Image-Data-Augmentation-Tech-Review/
 │
 ├── experiments/
 │   └── README.md
-│
 ├── results/
 │   └── README.md
-│
 └── docs/
     └── RESEARCH_PROTOCOL.md
 ```
 
 ---
 
-## Experimental levels
-
-### Level 1 — Visual verification
-Confirm that an augmentation produces the intended image-space transformation.
-
-### Level 2 — Pixel diagnostics
-Measure image-level change using MSE, MAE, PSNR, histogram distance and edge-density change.
-
-These measurements quantify transformation behaviour. They do **not** demonstrate improved classification or generalisation.
-
-### Level 3 — Model evaluation
-A future benchmark should use:
-
-- fixed model architecture;
-- fixed train/validation/test split;
-- augmentation restricted to the training data;
-- repeated random seeds;
-- task-specific evaluation metrics;
-- mean and variability across runs.
-
-### Level 4 — Ablation and sensitivity
-Evaluate individual augmentation families and controlled combinations while varying one experimental factor at a time.
-
-### Level 5 — Literature comparison
-Compare newly generated observations with the source paper while explicitly identifying differences in dataset, architecture, augmentation policy and evaluation protocol.
-
----
-
-## Evidence discipline
-
-Every result in this repository should be labelled as one of:
-
-**Literature evidence**  
-A finding or numerical result reported by the source paper.
-
-**Reproduction**  
-An experiment attempting to recreate a documented method or experimental condition.
-
-**Extension**  
-A new experiment designed for this repository.
-
-This distinction prevents newly generated results from being presented as published results.
-
----
-
-## Reproducibility requirements
-
-Record, where applicable:
-
-- dataset and version;
-- data split;
-- model architecture;
-- software/library versions;
-- augmentation policy;
-- random seed(s);
-- training configuration;
-- evaluation metrics;
-- number of repetitions;
-- mean and standard deviation;
-- confidence intervals where appropriate.
-
-The test set should remain isolated from training augmentation to reduce the risk of data leakage.
-
----
-
-## Current interfaces
-
-### Interactive research laboratory
+## 💻 Run locally
 
 ```bash
 git clone https://github.com/Dinakarnayak/Image-Data-Augmentation-Tech-Review.git
 cd Image-Data-Augmentation-Tech-Review
 python -m venv .venv
+```
+
+**Windows**
+```bash
+.venv\Scripts\activate
+```
+
+**macOS / Linux**
+```bash
 source .venv/bin/activate
+```
+
+Install and run:
+
+```bash
 pip install -r requirements.txt
 streamlit run app.py
 ```
 
-### Google Colab
+---
 
-urlOpen the Colab research notebookhttps://colab.research.google.com/github/Dinakarnayak/Image-Data-Augmentation-Tech-Review/blob/main/notebooks/Image_Data_Augmentation_Research_Lab_Colab.ipynb
+## ☁️ Google Colab
+
+**[Open the Research Lab in Google Colab](https://colab.research.google.com/github/Dinakarnayak/Image-Data-Augmentation-Tech-Review/blob/main/notebooks/Image_Data_Augmentation_Research_Lab_Colab.ipynb)**
 
 ---
 
-## Limitations
+## ⚠️ Scope and limitations
 
-The current implementation is primarily an **image-space research laboratory**. It should not be described as implementing GAN augmentation, adversarial training, feature-space augmentation, neural style transfer or meta-learning as defined in the survey.
+The current project is primarily an **image-space research laboratory**.
 
-The policy-search module is an engineering extension for exploring stochastic augmentation policies; it is not claimed to reproduce AutoAugment or the survey's published experimental results.
+It does not claim to reproduce GAN training, adversarial training, feature-space augmentation, neural style transfer, the complete meta-learning literature, or every experiment in Shorten & Khoshgoftaar (2019).
 
-Pixel-level diversity is also not equivalent to semantic validity or improved model performance.
+The stochastic policy-search component is an **engineering extension**, not a reproduction of AutoAugment or the survey's numerical results.
 
 ---
 
-## Citation
+## 🎓 Academic use
 
-If this repository is used as a companion to the technical review, cite the source paper:
+For the accompanying technical review, distinguish:
 
-Shorten, C., & Khoshgoftaar, T. M. (2019). A survey on Image Data Augmentation for Deep Learning. *Journal of Big Data, 6*, 60. DOI: 10.1186/s40537-019-0197-0.
+> **What the paper reports → What this repository implements → What a new experiment measures → What conclusion the evidence supports**
 
-See `CITATION.cff` for repository citation metadata.
+---
+
+## 📖 Reference
+
+Shorten, C., & Khoshgoftaar, T. M. (2019). *A survey on Image Data Augmentation for Deep Learning*. **Journal of Big Data, 6**, 60.
+
+**DOI:** 10.1186/s40537-019-0197-0
+
+---
+
+<p align="center">
+  <strong>Image Data Augmentation Research Lab</strong><br>
+  CO3091 / CO7091 · Experimental Research Companion
+</p>
