@@ -1,142 +1,122 @@
-# Image Data Augmentation Tech Review
+# Image Data Augmentation — Paper-Based Research Companion
 
-Advanced interactive Streamlit demonstration for the **Computational Intelligence and Software Engineering** tech review on image data augmentation.
+**CO3091/CO7091 Computational Intelligence and Software Engineering**
 
-## Reference paper
+This repository is an experimental companion to:
 
-Shorten, C. & Khoshgoftaar, T. M. (2019). *A survey on image data augmentation for deep learning*. Journal of Big Data, 6, 60.
+> Shorten, C. & Khoshgoftaar, T. M. (2019). *A survey on Image Data Augmentation for Deep Learning*. Journal of Big Data, 6, 60.
 
-## What the demo now includes
+The implementation is deliberately organised around the **taxonomy and research questions of the source paper** rather than being presented as an independent augmentation application.
 
-### 1. Single-technique Playground
-Explore image-space augmentation interactively:
+## 1. Paper → Implementation map
 
-- **Geometric transformations**
-  - Horizontal / vertical flipping
-  - Rotation
-  - Translation
-  - Shearing
-  - Center crop + resize
-- **Colour-space transformations**
-  - Brightness
-  - Contrast
-  - Colour saturation
-  - Sharpness
-  - Grayscale
-  - Inversion
-  - Solarization
-  - Posterization
-- **Kernel/filter operations**
-  - Blur
-  - Gaussian blur
-  - Sharpen
-  - Edge enhancement
-  - Emboss
-  - Custom 3×3 edge kernel
-- **Random erasing**
-  - Configurable erased area
-  - Reproducible seed
-  - Black, mean-colour or random fill
+| Concept in the 2019 survey | Repository component | Status |
+|---|---|---|
+| Geometric transformations | Streamlit + Colab experiments | Implemented |
+| Colour-space transformations | Streamlit + Colab experiments | Implemented |
+| Kernel filters | Streamlit experiments | Implemented |
+| Random erasing | Streamlit + Colab experiments | Implemented |
+| Mixing images | Streamlit pipeline | Demonstration |
+| Feature-space augmentation | Research/theory extension | Not claimed as reproduced |
+| Adversarial training | Research/theory extension | Not claimed as reproduced |
+| GAN-based augmentation | Research/theory extension | Not claimed as reproduced |
+| Neural style transfer | Research/theory extension | Not claimed as reproduced |
+| Meta-learning / policy search | Stochastic policy-search framework | Experimental extension |
+| Test-time augmentation | Planned benchmark extension | Not yet implemented |
+| Dataset-size effects | Planned benchmark extension | Not yet implemented |
+| Curriculum learning | Literature/theory extension | Not yet implemented |
 
-The Playground also reports MSE, MAE and PSNR as pixel-level comparison measures.
+The survey explicitly identifies geometric transformations, colour-space augmentation, kernel filters, mixing images, random erasing, feature-space augmentation, adversarial training, GANs, neural style transfer and meta-learning as augmentation approaches. It also discusses test-time augmentation, resolution, final dataset size and curriculum learning. 
 
-### 2. Multi-stage Pipeline
-Build a sequence of up to six augmentation operations.
+## 2. Repository architecture
 
-The order is preserved, so the interface can demonstrate that:
+```text
+Image-Data-Augmentation-Tech-Review/
+│
+├── app.py
+├── requirements.txt
+├── README.md
+├── LICENSE
+│
+├── notebooks/
+│   └── Image_Data_Augmentation_Research_Lab_Colab.ipynb
+│
+├── experiments/
+│   └── README.md
+│
+└── results/
+    └── README.md
+```
 
-> augmentation operations can have cumulative effects and that pipeline order can change the final image.
+## 3. Research workflow
 
-### 3. Batch Variant Generator
-Generate 2–20 deterministic augmented variants using a controlled random seed.
+The intended workflow is:
 
-The generated images can be downloaded together as a ZIP archive.
+```text
+Source paper
+    ↓
+Taxonomy
+    ↓
+Technique implementation
+    ↓
+Controlled experiment
+    ↓
+Quantitative diagnostics
+    ↓
+CNN benchmark
+    ↓
+Ablation / sensitivity analysis
+    ↓
+Critical comparison with paper
+```
 
-### 4. Visual Analysis
-The Analysis tab provides:
+The current application implements the first experimental layers. Pixel-level metrics such as MSE, MAE and PSNR describe image change; they **do not establish improved model generalisation**.
 
-- RGB histograms
-- Input/output dimensions
-- Mean absolute error
-- PSNR
-- A clear distinction between pixel-level similarity and machine-learning performance
+## 4. Paper evidence vs. new experiments
 
-## Important academic scope
+This repository keeps three types of evidence separate:
 
-This repository is a **demonstration companion**, not a reproduction of every method or experiment in the survey.
+### A. Literature evidence
+Results reported by Shorten & Khoshgoftaar (2019) are treated as findings from the published survey.
 
-The survey also discusses broader/model-based approaches including:
+### B. Reproduction
+An experiment is called a reproduction only when the repository implements the relevant method and experimental conditions sufficiently to make that claim.
 
-- Feature-space augmentation
-- Adversarial training
-- GAN-based augmentation
-- Neural style transfer
-- Meta-learning
+### C. Extension
+New policy-search, sensitivity and dataset-generation experiments are labelled as extensions rather than attributed to the 2019 paper.
 
-Those methods are intentionally not presented as implemented by this lightweight Pillow/NumPy application.
+This separation prevents generated experimental results from being confused with published results.
 
-Similarly, literature results reported in the survey must be cited as **published results** rather than presented as results generated by this application.
+## 5. Google Colab
 
-## Run locally
+The Colab notebook provides a reproducible notebook-based companion:
+
+urlOpen in Google Colabhttps://colab.research.google.com/github/Dinakarnayak/Image-Data-Augmentation-Tech-Review/blob/main/notebooks/Image_Data_Augmentation_Research_Lab_Colab.ipynb
+
+## 6. Interactive laboratory
+
+Run the Streamlit research interface:
 
 ```bash
 git clone https://github.com/Dinakarnayak/Image-Data-Augmentation-Tech-Review.git
 cd Image-Data-Augmentation-Tech-Review
-
 python -m venv .venv
 source .venv/bin/activate
-
 pip install -r requirements.txt
 streamlit run app.py
 ```
 
-### Windows PowerShell
+## 7. Academic use
 
-```powershell
-.venv\\Scripts\\activate
-streamlit run app.py
-```
+The repository is intended as a **demonstration/experimental companion** to the technical review. It should not be presented as reproducing every experiment in the survey.
 
-## Project structure
+For the assessed report, distinguish:
 
-```text
-.
-├── app.py
-├── requirements.txt
-├── README.md
-├── .gitignore
-└── LICENSE
-```
+- what the paper states;
+- what the implementation demonstrates;
+- what an experiment measures;
+- and what conclusions are justified by the experiment.
 
-## Technologies
+## Reference
 
-- Python
-- Streamlit
-- Pillow
-- NumPy
-
-## Licence
-
-MIT
-
-
-## ☁️ Google Colab
-
-A reproducible Google Colab notebook is included:
-
-**Notebook:** `notebooks/Image_Data_Augmentation_Research_Lab_Colab.ipynb`
-
-Open it directly in Google Colab:
-
-https://colab.research.google.com/github/Dinakarnayak/Image-Data-Augmentation-Tech-Review/blob/main/notebooks/Image_Data_Augmentation_Research_Lab_Colab.ipynb
-
-The Colab notebook demonstrates:
-
-- geometric transformations
-- colour-space augmentation
-- random erasing
-- pixel-level diagnostics
-- reproducible random seeds
-- experiment tables and visualisation
-
-For the complete interactive research laboratory, use `app.py` locally or deploy the Streamlit application.
+Shorten, C., & Khoshgoftaar, T. M. (2019). A survey on Image Data Augmentation for Deep Learning. *Journal of Big Data, 6*, 60.
