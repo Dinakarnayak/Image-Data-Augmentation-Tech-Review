@@ -279,7 +279,7 @@ def stochastic_policy(img, steps: List[PolicyStep], seed: int):
         elif op == "Saturation":
             params = {"value": float(1 + rng.uniform(-0.5, 0.5) * m)}
         elif op == "Gaussian blur":
-            params = {"radius": float(max(0.05, rng.uniform(0.2, 4.0) * m)}
+            params = {"radius": float(max(0.05, rng.uniform(0.2, 4.0) * m))}
         elif op == "Random erasing":
             params = {
                 "area": float(rng.uniform(5, 25) * m),
