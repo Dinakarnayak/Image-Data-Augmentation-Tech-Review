@@ -1,33 +1,30 @@
 import io
+import json
 import zipfile
-from typing import Callable, Dict, Tuple
+from dataclasses import dataclass, asdict
+from typing import Dict, List, Tuple
 
 import numpy as np
+import pandas as pd
 import streamlit as st
 from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 
 st.set_page_config(
-    page_title="Image Data Augmentation Lab",
-    page_icon="🧪",
+    page_title="Image Augmentation Research Lab",
+    page_icon="🧬",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-st.title("🧪 Image Data Augmentation Lab")
+st.title("🧬 Image Data Augmentation Research Lab")
 st.caption(
-    "Advanced interactive companion for the Shorten & Khoshgoftaar (2019) "
-    "image data augmentation survey."
+    "Research-oriented interactive laboratory based on the augmentation taxonomy "
+    "discussed by Shorten & Khoshgoftaar (2019)."
 )
 
-st.markdown(
-    """
-    <style>
-    .metric-card {padding: 0.7rem 1rem; border: 1px solid #ddd; border-radius: 10px;}
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-
+# ---------------------------------------------------------------------------
+# Core image operators
+# ---------------------------------------------------------------------------
 
 @st.cache_data
 def load_image(data: bytes) -> Image.Image:
@@ -40,49 +37,40 @@ def image_bytes(img: Image.Image, fmt: str = "PNG") -> bytes:
     return buffer.getvalue()
 
 
-def resize_for_display(img: Image.Image, max_side: int = 1200) -> Image.Image:
-    copy = img.copy()
-    copy.thumbnail((max_side, max_side), Image.Resampling.LANCZOS)
-    return copy
+def resize_for_display(img: Image.Image, max_side: int = 1100) -> Image.Image:
+    out = img.copy()
+    out.thumbnail((max_side, max_side), Image.Resampling.LANCZOS)
+    return out
 
 
-def rotate(img: Image.Image, degrees: float) -> Image.Image:
+def rotate(img, degrees):
     return img.rotate(
-        degrees,
-        expand=True,
-        fillcolor=(255, 255, 255),
-        resample=Image.Resampling.BICUBIC,
+        degrees, expand=True, fillcolor=(255, 255, 255),
+        resample=Image.Resampling.BICUBIC
     )
 
 
-def translate(img: Image.Image, x: int, y: int) -> Image.Image:
+def translate(img, x, y):
     return img.transform(
-        img.size,
-        Image.Transform.AFFINE,
+        img.size, Image.Transform.AFFINE,
         (1, 0, -x, 0, 1, -y),
         resample=Image.Resampling.BICUBIC,
-        fillcolor=(255, 255, 255),
+        fillcolor=(255, 255, 255)
     )
 
 
-def shear(img: Image.Image, x_shear: float, y_shear: float) -> Image.Image:
+def shear(img, x_shear, y_shear):
     return img.transform(
-        img.size,
-        Image.Transform.AFFINE,
+        img.size, Image.Transform.AFFINE,
         (1, x_shear, 0, y_shear, 1, 0),
         resample=Image.Resampling.BICUBIC,
-        fillcolor=(255, 255, 255),
+        fillcolor=(255, 255, 255)
     )
 
 
-def random_erasing(
-    img: Image.Image,
-    area_percent: float,
-    seed: int,
-    fill_mode: str = "black",
-) -> Image.Image:
-    rng = np.random.default_rng(seed)
-    arr = np.array(img).copy()
+def random_erasing(img, area_percent, seed, fill_mode="black"):
+    rng = np.random.default_rng(int(seed))
+    arr = np.asarray(img).copy()
     h, w, _ = arr.shape
     target = max(1, int(h * w * area_percent / 100))
     ratio = float(rng.uniform(0.5, 2.0))
@@ -92,416 +80,613 @@ def random_erasing(
     x = int(rng.integers(0, max(1, w - ew + 1)))
 
     if fill_mode == "random":
-        arr[y : y + eh, x : x + ew] = rng.integers(
+        arr[y:y + eh, x:x + ew] = rng.integers(
             0, 256, size=(eh, ew, 3), dtype=np.uint8
         )
     elif fill_mode == "mean":
-        arr[y : y + eh, x : x + ew] = np.mean(arr, axis=(0, 1)).astype(np.uint8)
+        arr[y:y + eh, x:x + ew] = np.mean(arr, axis=(0, 1)).astype(np.uint8)
     else:
-        arr[y : y + eh, x : x + ew] = 0
+        arr[y:y + eh, x:x + ew] = 0
 
     return Image.fromarray(arr)
 
 
-def center_crop(img: Image.Image, fraction: float) -> Image.Image:
-    w, h = img.size
-    nw, nh = int(w * fraction), int(h * fraction)
-    left, top = (w - nw) // 2, (h - nh) // 2
-    return img.crop((left, top, left + nw, top + nh)).resize(
-        (w, h), Image.Resampling.LANCZOS
-    )
-
-
-def apply_operation(img: Image.Image, operation: str, params: Dict) -> Image.Image:
+def apply_operation(img, operation, p):
     if operation == "Horizontal flip":
         return img.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
     if operation == "Vertical flip":
         return img.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
     if operation == "Rotation":
-        return rotate(img, params["degrees"])
+        return rotate(img, p["degrees"])
     if operation == "Translation":
-        return translate(img, params["x"], params["y"])
+        return translate(img, p["x"], p["y"])
     if operation == "Shear":
-        return shear(img, params["x"], params["y"])
-    if operation == "Center crop + resize":
-        return center_crop(img, params["fraction"])
+        return shear(img, p["x"], p["y"])
+    if operation == "Crop + resize":
+        w, h = img.size
+        frac = p["fraction"]
+        nw, nh = int(w * frac), int(h * frac)
+        left, top = (w - nw) // 2, (h - nh) // 2
+        return img.crop((left, top, left + nw, top + nh)).resize(
+            (w, h), Image.Resampling.LANCZOS
+        )
 
     if operation == "Brightness":
-        return ImageEnhance.Brightness(img).enhance(params["value"])
+        return ImageEnhance.Brightness(img).enhance(p["value"])
     if operation == "Contrast":
-        return ImageEnhance.Contrast(img).enhance(params["value"])
-    if operation == "Colour saturation":
-        return ImageEnhance.Color(img).enhance(params["value"])
+        return ImageEnhance.Contrast(img).enhance(p["value"])
+    if operation == "Saturation":
+        return ImageEnhance.Color(img).enhance(p["value"])
     if operation == "Sharpness":
-        return ImageEnhance.Sharpness(img).enhance(params["value"])
+        return ImageEnhance.Sharpness(img).enhance(p["value"])
     if operation == "Grayscale":
         return ImageOps.grayscale(img).convert("RGB")
     if operation == "Invert":
         return ImageOps.invert(img)
     if operation == "Solarize":
-        return ImageOps.solarize(img, threshold=params["threshold"])
+        return ImageOps.solarize(img, threshold=p["threshold"])
     if operation == "Posterize":
-        return ImageOps.posterize(img, bits=params["bits"])
+        return ImageOps.posterize(img, bits=p["bits"])
 
     if operation == "Blur":
         return img.filter(ImageFilter.BLUR)
     if operation == "Gaussian blur":
-        return img.filter(ImageFilter.GaussianBlur(radius=params["radius"]))
+        return img.filter(ImageFilter.GaussianBlur(p["radius"]))
     if operation == "Sharpen":
         return img.filter(ImageFilter.SHARPEN)
     if operation == "Edge enhance":
         return img.filter(ImageFilter.EDGE_ENHANCE)
     if operation == "Emboss":
         return img.filter(ImageFilter.EMBOSS)
-    if operation == "Custom edge kernel":
+    if operation == "Edge kernel":
         return img.filter(
             ImageFilter.Kernel(
-                (3, 3),
-                [-1, -1, -1, -1, 8, -1, -1, -1, -1],
-                scale=1,
-                offset=128,
+                (3, 3), [-1, -1, -1, -1, 8, -1, -1, -1, -1],
+                scale=1, offset=128
             )
         )
-
     if operation == "Random erasing":
         return random_erasing(
-            img,
-            params["area"],
-            params["seed"],
-            params["fill_mode"],
+            img, p["area"], p["seed"], p["fill_mode"]
         )
 
     return img.copy()
 
 
-def operation_parameters(operation: str, prefix: str = "") -> Dict:
-    key = prefix or operation
-    if operation == "Rotation":
-        return {"degrees": st.slider(f"{key} — degrees", -180, 180, 25, key=f"{key}_deg")}
-    if operation == "Translation":
-        return {
-            "x": st.slider(f"{key} — X", -100, 100, 20, key=f"{key}_x"),
-            "y": st.slider(f"{key} — Y", -100, 100, 20, key=f"{key}_y"),
-        }
-    if operation == "Shear":
-        return {
-            "x": st.slider(f"{key} — X shear", -0.5, 0.5, 0.0, 0.01, key=f"{key}_xs"),
-            "y": st.slider(f"{key} — Y shear", -0.5, 0.5, 0.0, 0.01, key=f"{key}_ys"),
-        }
-    if operation == "Center crop + resize":
-        return {"fraction": st.slider(f"{key} — crop fraction", 0.5, 1.0, 0.8, 0.05, key=f"{key}_crop")}
-    if operation in {"Brightness", "Contrast", "Colour saturation", "Sharpness"}:
-        return {"value": st.slider(f"{key} — intensity", 0.0, 2.0, 1.0, 0.05, key=f"{key}_int")}
-    if operation == "Gaussian blur":
-        return {"radius": st.slider(f"{key} — radius", 0.1, 10.0, 2.0, 0.1, key=f"{key}_radius")}
-    if operation == "Solarize":
-        return {"threshold": st.slider(f"{key} — threshold", 0, 255, 128, key=f"{key}_threshold")}
-    if operation == "Posterize":
-        return {"bits": st.slider(f"{key} — bits/channel", 1, 8, 4, key=f"{key}_bits")}
-    if operation == "Random erasing":
-        return {
-            "area": st.slider(f"{key} — erased area (%)", 1, 40, 10, key=f"{key}_area"),
-            "seed": st.number_input(f"{key} — seed", 0, 999999, 42, key=f"{key}_seed"),
-            "fill_mode": st.selectbox(
-                f"{key} — fill",
-                ["black", "mean", "random"],
-                key=f"{key}_fill",
-            ),
-        }
-    return {}
+OPERATIONS = {
+    "Geometric": [
+        "Horizontal flip", "Vertical flip", "Rotation",
+        "Translation", "Shear", "Crop + resize"
+    ],
+    "Colour-space": [
+        "Brightness", "Contrast", "Saturation", "Sharpness",
+        "Grayscale", "Invert", "Solarize", "Posterize"
+    ],
+    "Kernel filters": [
+        "Blur", "Gaussian blur", "Sharpen", "Edge enhance",
+        "Emboss", "Edge kernel"
+    ],
+    "Occlusion": ["Random erasing"],
+}
+
+ALL_OPERATIONS = [x for group in OPERATIONS.values() for x in group]
 
 
-def mse(a: Image.Image, b: Image.Image) -> float:
+# ---------------------------------------------------------------------------
+# Research diagnostics
+# ---------------------------------------------------------------------------
+
+def rgb_histogram(img, bins=32):
+    arr = np.asarray(img.resize((256, 256)))
+    output = []
+    for c in range(3):
+        h, _ = np.histogram(arr[:, :, c], bins=bins, range=(0, 256), density=True)
+        output.append(h)
+    return np.concatenate(output)
+
+
+def grayscale_array(img):
+    arr = np.asarray(img.resize((256, 256)), dtype=np.float32)
+    return 0.299 * arr[:, :, 0] + 0.587 * arr[:, :, 1] + 0.114 * arr[:, :, 2]
+
+
+def edge_density(img):
+    g = grayscale_array(img)
+    gx = np.abs(np.diff(g, axis=1))
+    gy = np.abs(np.diff(g, axis=0))
+    return float((np.mean(gx) + np.mean(gy)) / 2.0 / 255.0)
+
+
+def mse(a, b):
     x = np.asarray(a.resize(b.size), dtype=np.float32)
     y = np.asarray(b, dtype=np.float32)
     return float(np.mean((x - y) ** 2))
 
 
-def mae(a: Image.Image, b: Image.Image) -> float:
+def mae(a, b):
     x = np.asarray(a.resize(b.size), dtype=np.float32)
     y = np.asarray(b, dtype=np.float32)
     return float(np.mean(np.abs(x - y)))
 
 
-def psnr(a: Image.Image, b: Image.Image) -> float:
+def psnr(a, b):
     value = mse(a, b)
-    if value == 0:
-        return float("inf")
-    return float(10 * np.log10((255.0**2) / value))
+    return float("inf") if value == 0 else float(10 * np.log10((255.0 ** 2) / value))
 
 
-def histogram_frame(img: Image.Image):
-    arr = np.asarray(img)
-    hist = {}
-    for i, channel in enumerate(["Red", "Green", "Blue"]):
-        counts, _ = np.histogram(arr[:, :, i], bins=32, range=(0, 256))
-        hist[channel] = counts
-    return hist
+def histogram_distance(a, b):
+    ha = rgb_histogram(a)
+    hb = rgb_histogram(b)
+    denom = np.linalg.norm(ha) * np.linalg.norm(hb)
+    return float(1 - np.dot(ha, hb) / denom) if denom else 0.0
 
+
+def diagnostics(original, augmented):
+    return {
+        "MSE": mse(original, augmented),
+        "MAE": mae(original, augmented),
+        "PSNR_dB": psnr(original, augmented),
+        "Histogram_distance": histogram_distance(original, augmented),
+        "Edge_density_original": edge_density(original),
+        "Edge_density_augmented": edge_density(augmented),
+        "Edge_density_delta": edge_density(augmented) - edge_density(original),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Stochastic research policy
+# ---------------------------------------------------------------------------
+
+@dataclass
+class PolicyStep:
+    operation: str
+    probability: float
+    magnitude: float
+
+
+def stochastic_policy(img, steps: List[PolicyStep], seed: int):
+    rng = np.random.default_rng(int(seed))
+    result = img.copy()
+    trace = []
+
+    for step in steps:
+        applied = bool(rng.random() <= step.probability)
+        if not applied:
+            trace.append(f"SKIP:{step.operation}")
+            continue
+
+        m = step.magnitude
+        op = step.operation
+
+        if op == "Horizontal flip":
+            params = {}
+        elif op == "Rotation":
+            params = {"degrees": float(rng.uniform(-30, 30) * m)}
+        elif op == "Translation":
+            params = {
+                "x": int(rng.uniform(-80, 80) * m),
+                "y": int(rng.uniform(-80, 80) * m),
+            }
+        elif op == "Shear":
+            params = {
+                "x": float(rng.uniform(-0.35, 0.35) * m),
+                "y": float(rng.uniform(-0.35, 0.35) * m),
+            }
+        elif op == "Brightness":
+            params = {"value": float(1 + rng.uniform(-0.4, 0.4) * m)}
+        elif op == "Contrast":
+            params = {"value": float(1 + rng.uniform(-0.4, 0.4) * m)}
+        elif op == "Saturation":
+            params = {"value": float(1 + rng.uniform(-0.5, 0.5) * m)}
+        elif op == "Gaussian blur":
+            params = {"radius": float(max(0.05, rng.uniform(0.2, 4.0) * m)}
+        elif op == "Random erasing":
+            params = {
+                "area": float(rng.uniform(5, 25) * m),
+                "seed": int(rng.integers(0, 10_000_000)),
+                "fill_mode": "random",
+            }
+        elif op == "Crop + resize":
+            params = {"fraction": float(1 - rng.uniform(0.05, 0.35) * m)}
+        else:
+            params = {}
+
+        result = apply_operation(result, op, params)
+        trace.append(f"APPLY:{op}")
+
+    return result, trace
+
+
+def random_policy(rng, length):
+    choices = [
+        "Horizontal flip", "Rotation", "Translation", "Brightness",
+        "Contrast", "Saturation", "Gaussian blur", "Random erasing",
+        "Crop + resize"
+    ]
+    return [
+        PolicyStep(
+            operation=str(rng.choice(choices)),
+            probability=float(rng.uniform(0.25, 1.0)),
+            magnitude=float(rng.uniform(0.25, 1.0)),
+        )
+        for _ in range(length)
+    ]
+
+
+def policy_diversity_score(original, augmented):
+    d = diagnostics(original, augmented)
+    # A diagnostic score, not a model-performance metric.
+    return float(
+        0.40 * np.clip(d["MAE"] / 80.0, 0, 1)
+        + 0.30 * np.clip(d["Histogram_distance"] * 5, 0, 1)
+        + 0.30 * np.clip(abs(d["Edge_density_delta"]) * 10, 0, 1)
+    )
+
+
+# ---------------------------------------------------------------------------
+# UI
+# ---------------------------------------------------------------------------
 
 uploaded = st.file_uploader(
-    "Upload an image",
+    "Upload a JPG or PNG image",
     type=["jpg", "jpeg", "png"],
-    help="Use a non-sensitive image. The demo processes the image in the app session.",
+    help="The image is used by the current Streamlit session for experimentation."
 )
 
 if not uploaded:
-    st.info("Upload a JPG or PNG image to open the augmentation laboratory.")
+    st.info("Upload an image to start the research laboratory.")
     st.stop()
 
 original = load_image(uploaded.getvalue())
-st.session_state.setdefault("original_image", original)
 
-tab_playground, tab_pipeline, tab_batch, tab_analysis = st.tabs(
-    ["🎛️ Playground", "🔗 Pipeline", "📦 Batch generation", "📊 Analysis"]
-)
+tabs = st.tabs([
+    "🎛️ Playground",
+    "🔗 Policy pipeline",
+    "🧬 Policy search",
+    "📈 Sensitivity",
+    "📦 Dataset generator",
+    "🔬 Diagnostics",
+])
 
 # ---------------------------------------------------------------------------
 # Playground
 # ---------------------------------------------------------------------------
-with tab_playground:
-    st.subheader("Single-technique laboratory")
-
-    categories = {
-        "Geometric": [
-            "Horizontal flip",
-            "Vertical flip",
-            "Rotation",
-            "Translation",
-            "Shear",
-            "Center crop + resize",
-        ],
-        "Colour-space": [
-            "Brightness",
-            "Contrast",
-            "Colour saturation",
-            "Sharpness",
-            "Grayscale",
-            "Invert",
-            "Solarize",
-            "Posterize",
-        ],
-        "Kernel filter": [
-            "Blur",
-            "Gaussian blur",
-            "Sharpen",
-            "Edge enhance",
-            "Emboss",
-            "Custom edge kernel",
-        ],
-        "Occlusion / erasing": ["Random erasing"],
-    }
-
+with tabs[0]:
     c1, c2 = st.columns([1, 2])
+
     with c1:
-        category = st.selectbox("Category", list(categories))
-        operation = st.selectbox("Technique", categories[category])
-        params = operation_parameters(operation, "playground")
-        result = apply_operation(original, operation, params)
+        category = st.selectbox("Technique family", list(OPERATIONS), key="pg_category")
+        operation = st.selectbox("Operation", OPERATIONS[category], key="pg_operation")
+
+        p = {}
+        if operation == "Rotation":
+            p["degrees"] = st.slider("Angle", -180, 180, 25)
+        elif operation == "Translation":
+            p["x"] = st.slider("X", -100, 100, 20)
+            p["y"] = st.slider("Y", -100, 100, 20)
+        elif operation == "Shear":
+            p["x"] = st.slider("X shear", -0.5, 0.5, 0.0, 0.01)
+            p["y"] = st.slider("Y shear", -0.5, 0.5, 0.0, 0.01)
+        elif operation == "Crop + resize":
+            p["fraction"] = st.slider("Crop fraction", 0.5, 1.0, 0.8, 0.05)
+        elif operation in {"Brightness", "Contrast", "Saturation", "Sharpness"}:
+            p["value"] = st.slider("Intensity", 0.0, 2.0, 1.0, 0.05)
+        elif operation == "Gaussian blur":
+            p["radius"] = st.slider("Radius", 0.1, 10.0, 2.0, 0.1)
+        elif operation == "Solarize":
+            p["threshold"] = st.slider("Threshold", 0, 255, 128)
+        elif operation == "Posterize":
+            p["bits"] = st.slider("Bits/channel", 1, 8, 4)
+        elif operation == "Random erasing":
+            p["area"] = st.slider("Area (%)", 1, 40, 10)
+            p["seed"] = st.number_input("Seed", 0, 999999, 42)
+            p["fill_mode"] = st.selectbox("Fill", ["black", "mean", "random"])
+
+        result = apply_operation(original, operation, p)
 
     with c2:
-        left, right = st.columns(2)
-        with left:
+        a, b = st.columns(2)
+        with a:
             st.markdown("**Original**")
             st.image(resize_for_display(original), use_container_width=True)
-        with right:
+        with b:
             st.markdown("**Augmented**")
             st.image(resize_for_display(result), use_container_width=True)
 
-    metric_cols = st.columns(3)
-    metric_cols[0].metric("MSE", f"{mse(original, result):.2f}")
-    metric_cols[1].metric("MAE", f"{mae(original, result):.2f}")
-    metric_cols[2].metric("PSNR", "∞" if np.isinf(psnr(original, result)) else f"{psnr(original, result):.2f} dB")
+    d = diagnostics(original, result)
+    cols = st.columns(5)
+    cols[0].metric("MSE", f"{d['MSE']:.2f}")
+    cols[1].metric("MAE", f"{d['MAE']:.2f}")
+    cols[2].metric("PSNR", "∞" if np.isinf(d["PSNR_dB"]) else f"{d['PSNR_dB']:.2f} dB")
+    cols[3].metric("Histogram Δ", f"{d['Histogram_distance']:.4f}")
+    cols[4].metric("Edge Δ", f"{d['Edge_density_delta']:.4f}")
 
     st.download_button(
-        "⬇️ Download augmented PNG",
+        "⬇️ Download result",
         image_bytes(result),
-        "augmented_image.png",
+        "augmentation_result.png",
         "image/png",
     )
 
 # ---------------------------------------------------------------------------
 # Pipeline
 # ---------------------------------------------------------------------------
-with tab_pipeline:
-    st.subheader("Multi-stage augmentation pipeline")
-    st.write("Apply several image-space operations sequentially and inspect the cumulative result.")
-
-    available = [
-        "Horizontal flip",
-        "Vertical flip",
-        "Rotation",
-        "Translation",
-        "Shear",
-        "Center crop + resize",
-        "Brightness",
-        "Contrast",
-        "Colour saturation",
-        "Sharpness",
-        "Grayscale",
-        "Invert",
-        "Solarize",
-        "Posterize",
-        "Blur",
-        "Gaussian blur",
-        "Sharpen",
-        "Edge enhance",
-        "Emboss",
-        "Custom edge kernel",
-        "Random erasing",
-    ]
-
-    selected = st.multiselect(
-        "Pipeline operations (order matters)",
-        available,
-        default=["Horizontal flip", "Rotation", "Contrast"],
-        max_selections=6,
-    )
-
-    pipeline_result = original.copy()
-    pipeline_log = []
-
-    for index, operation in enumerate(selected, start=1):
-        with st.expander(f"Stage {index}: {operation}", expanded=index <= 2):
-            params = operation_parameters(operation, f"stage{index}")
-            pipeline_result = apply_operation(pipeline_result, operation, params)
-            pipeline_log.append(operation)
-
-    if selected:
-        a, b = st.columns(2)
-        with a:
-            st.markdown("**Input**")
-            st.image(resize_for_display(original), use_container_width=True)
-        with b:
-            st.markdown("**Pipeline output**")
-            st.image(resize_for_display(pipeline_result), use_container_width=True)
-
-        st.success(" → ".join(pipeline_log))
-        st.download_button(
-            "⬇️ Download pipeline output",
-            image_bytes(pipeline_result),
-            "pipeline_augmented.png",
-            "image/png",
-        )
-    else:
-        st.warning("Select at least one operation.")
-
-# ---------------------------------------------------------------------------
-# Batch generation
-# ---------------------------------------------------------------------------
-with tab_batch:
-    st.subheader("Synthetic variant generator")
+with tabs[1]:
+    st.subheader("Explicit augmentation policy")
     st.write(
-        "Generate multiple deterministic variants from the uploaded image. "
-        "This is a demonstration of augmentation diversity, not model training."
+        "Compose operations in a controlled order. Each stage has a probability and "
+        "magnitude, making the pipeline closer to a research experiment than a fixed demo."
     )
 
-    batch_size = st.slider("Number of variants", 2, 20, 6)
-    seed = st.number_input("Base random seed", 0, 999999, 2026)
+    n = st.slider("Number of policy stages", 1, 6, 3)
+    steps = []
 
-    random_ops = [
-        "Horizontal flip",
-        "Rotation",
-        "Brightness",
-        "Contrast",
-        "Colour saturation",
-        "Gaussian blur",
-        "Random erasing",
-    ]
+    for i in range(n):
+        with st.expander(f"Stage {i + 1}", expanded=i < 2):
+            op = st.selectbox(
+                "Operation",
+                ALL_OPERATIONS,
+                index=min(i, len(ALL_OPERATIONS) - 1),
+                key=f"policy_op_{i}",
+            )
+            probability = st.slider(
+                "Application probability", 0.0, 1.0, 0.7,
+                0.05, key=f"policy_prob_{i}"
+            )
+            magnitude = st.slider(
+                "Magnitude", 0.0, 1.0, 0.7,
+                0.05, key=f"policy_mag_{i}"
+            )
+            steps.append(PolicyStep(op, probability, magnitude))
 
-    if st.button("Generate variants", type="primary"):
-        rng = np.random.default_rng(seed)
-        variants = []
+    seed = st.number_input("Policy seed", 0, 999999, 2026, key="policy_seed")
+    output, trace = stochastic_policy(original, steps, seed)
 
-        for i in range(batch_size):
-            variant = original.copy()
-            op = random_ops[int(rng.integers(0, len(random_ops)))]
+    left, right = st.columns(2)
+    with left:
+        st.image(resize_for_display(original), caption="Input", use_container_width=True)
+    with right:
+        st.image(resize_for_display(output), caption="Policy output", use_container_width=True)
 
-            if op == "Horizontal flip":
-                variant = apply_operation(variant, op, {})
-            elif op == "Rotation":
-                variant = rotate(variant, float(rng.integers(-35, 36)))
-            elif op == "Brightness":
-                variant = ImageEnhance.Brightness(variant).enhance(float(rng.uniform(0.7, 1.3)))
-            elif op == "Contrast":
-                variant = ImageEnhance.Contrast(variant).enhance(float(rng.uniform(0.7, 1.3)))
-            elif op == "Colour saturation":
-                variant = ImageEnhance.Color(variant).enhance(float(rng.uniform(0.6, 1.4)))
-            elif op == "Gaussian blur":
-                variant = variant.filter(ImageFilter.GaussianBlur(float(rng.uniform(0.2, 3.0))))
-            elif op == "Random erasing":
-                variant = random_erasing(variant, float(rng.uniform(5, 20)), int(seed + i), "random")
+    st.code("\n".join(trace), language="text")
 
-            variants.append((op, variant))
+    policy_json = json.dumps([asdict(x) for x in steps], indent=2)
+    st.download_button(
+        "🧾 Export policy JSON",
+        policy_json,
+        "augmentation_policy.json",
+        "application/json",
+    )
 
-        st.session_state["variants"] = variants
+# ---------------------------------------------------------------------------
+# Policy search
+# ---------------------------------------------------------------------------
+with tabs[2]:
+    st.subheader("Monte-Carlo augmentation policy search")
+    st.write(
+        "This module samples stochastic policies and ranks them using an explicit "
+        "image-diversity diagnostic. It does **not** claim to optimise neural-network accuracy."
+    )
 
-    variants = st.session_state.get("variants", [])
-    if variants:
-        cols = st.columns(3)
-        for i, (op, variant) in enumerate(variants):
-            with cols[i % 3]:
-                st.caption(f"Variant {i + 1}: {op}")
-                st.image(resize_for_display(variant, 600), use_container_width=True)
+    trials = st.slider("Number of sampled policies", 5, 100, 20)
+    stages = st.slider("Stages per policy", 1, 5, 3)
+    search_seed = st.number_input("Search seed", 0, 999999, 1234)
 
-        zip_buffer = io.BytesIO()
-        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as archive:
-            for i, (op, variant) in enumerate(variants, start=1):
-                archive.writestr(
-                    f"variant_{i:02d}_{op.lower().replace(' ', '_')}.png",
-                    image_bytes(variant),
+    if st.button("Run policy search", type="primary"):
+        rng = np.random.default_rng(search_seed)
+        rows = []
+
+        progress = st.progress(0)
+        for i in range(trials):
+            policy = random_policy(rng, stages)
+            output, trace = stochastic_policy(
+                original, policy, int(rng.integers(0, 10_000_000))
+            )
+            d = diagnostics(original, output)
+
+            rows.append({
+                "trial": i + 1,
+                "diversity_score": policy_diversity_score(original, output),
+                "MAE": d["MAE"],
+                "PSNR_dB": d["PSNR_dB"],
+                "histogram_distance": d["Histogram_distance"],
+                "edge_delta": d["Edge_density_delta"],
+                "policy": " | ".join(x.operation for x in policy),
+            })
+            progress.progress((i + 1) / trials)
+
+        df = pd.DataFrame(rows).sort_values(
+            "diversity_score", ascending=False
+        ).reset_index(drop=True)
+
+        st.session_state["search_results"] = df
+
+    if "search_results" in st.session_state:
+        df = st.session_state["search_results"]
+        st.dataframe(df, use_container_width=True, hide_index=True)
+        st.line_chart(df.set_index("trial")["diversity_score"])
+
+        csv = df.to_csv(index=False).encode("utf-8")
+        st.download_button(
+            "📄 Download policy-search results CSV",
+            csv,
+            "policy_search_results.csv",
+            "text/csv",
+        )
+
+# ---------------------------------------------------------------------------
+# Sensitivity
+# ---------------------------------------------------------------------------
+with tabs[3]:
+    st.subheader("Augmentation magnitude sensitivity")
+    operation = st.selectbox(
+        "Sensitivity operation",
+        ["Rotation", "Brightness", "Contrast", "Saturation", "Gaussian blur", "Random erasing"],
+    )
+    points = st.slider("Evaluation points", 5, 25, 11)
+
+    rows = []
+    magnitudes = np.linspace(0.0, 1.0, points)
+
+    for m in magnitudes:
+        if operation == "Rotation":
+            p = {"degrees": float(-45 + 90 * m)}
+        elif operation == "Brightness":
+            p = {"value": float(0.6 + 0.8 * m)}
+        elif operation == "Contrast":
+            p = {"value": float(0.6 + 0.8 * m)}
+        elif operation == "Saturation":
+            p = {"value": float(0.5 + 1.0 * m)}
+        elif operation == "Gaussian blur":
+            p = {"radius": float(0.1 + 5.0 * m)}
+        else:
+            p = {
+                "area": float(1 + 35 * m),
+                "seed": 2026,
+                "fill_mode": "random",
+            }
+
+        out = apply_operation(original, operation, p)
+        d = diagnostics(original, out)
+        rows.append({
+            "magnitude": m,
+            "MAE": d["MAE"],
+            "PSNR_dB": d["PSNR_dB"],
+            "histogram_distance": d["Histogram_distance"],
+            "edge_density_delta": d["Edge_density_delta"],
+        })
+
+    sensitivity_df = pd.DataFrame(rows)
+    st.dataframe(sensitivity_df, use_container_width=True, hide_index=True)
+    st.line_chart(
+        sensitivity_df.set_index("magnitude")[["MAE", "histogram_distance"]]
+    )
+
+# ---------------------------------------------------------------------------
+# Dataset generator
+# ---------------------------------------------------------------------------
+with tabs[4]:
+    st.subheader("Controlled augmentation dataset generation")
+
+    extra = st.file_uploader(
+        "Optional additional source images",
+        type=["jpg", "jpeg", "png"],
+        accept_multiple_files=True,
+    )
+
+    source_images = [original]
+    if extra:
+        source_images.extend(load_image(x.getvalue()) for x in extra)
+
+    variants_per_image = st.slider("Variants per source", 1, 10, 3)
+    dataset_seed = st.number_input("Dataset seed", 0, 999999, 2026)
+
+    if st.button("Generate dataset package", type="primary"):
+        rng = np.random.default_rng(dataset_seed)
+        generated = []
+
+        for source_idx, source in enumerate(source_images):
+            for variant_idx in range(variants_per_image):
+                policy = random_policy(rng, int(rng.integers(1, 4)))
+                out, trace = stochastic_policy(
+                    source, policy, int(rng.integers(0, 10_000_000))
+                )
+                generated.append(
+                    (source_idx, variant_idx, out, " | ".join(trace))
                 )
 
+        st.session_state["generated_dataset"] = generated
+
+    generated = st.session_state.get("generated_dataset", [])
+    if generated:
+        preview = st.columns(4)
+        for i, (_, _, img, trace) in enumerate(generated[:12]):
+            with preview[i % 4]:
+                st.image(resize_for_display(img, 500), use_container_width=True)
+                st.caption(trace)
+
+        zip_buffer = io.BytesIO()
+        manifest = []
+
+        with zipfile.ZipFile(
+            zip_buffer, "w", zipfile.ZIP_DEFLATED
+        ) as archive:
+            for source_idx, variant_idx, img, trace in generated:
+                filename = f"source_{source_idx:03d}_variant_{variant_idx:03d}.png"
+                archive.writestr(filename, image_bytes(img))
+                manifest.append({
+                    "filename": filename,
+                    "source_index": source_idx,
+                    "variant_index": variant_idx,
+                    "trace": trace,
+                })
+
+            archive.writestr(
+                "manifest.csv",
+                pd.DataFrame(manifest).to_csv(index=False)
+            )
+
         st.download_button(
-            "📦 Download all variants as ZIP",
+            "📦 Download generated dataset + manifest",
             zip_buffer.getvalue(),
-            "augmentation_variants.zip",
+            "augmentation_dataset.zip",
             "application/zip",
         )
 
 # ---------------------------------------------------------------------------
-# Analysis
+# Diagnostics
 # ---------------------------------------------------------------------------
-with tab_analysis:
-    st.subheader("Visual and numerical comparison")
+with tabs[5]:
+    st.subheader("Research diagnostics and interpretation")
 
-    analysis_result = st.session_state.get("variants", [(None, original)])[0][1]
+    arr = np.asarray(original.resize((256, 256)))
+    channel_df = pd.DataFrame({
+        "channel": ["Red", "Green", "Blue"],
+        "mean": arr.mean(axis=(0, 1)),
+        "std": arr.std(axis=(0, 1)),
+        "min": arr.min(axis=(0, 1)),
+        "max": arr.max(axis=(0, 1)),
+    })
+    st.dataframe(channel_df, use_container_width=True, hide_index=True)
 
-    c1, c2 = st.columns(2)
-    with c1:
-        st.markdown("**Original RGB histogram**")
-        st.line_chart(histogram_frame(original))
-    with c2:
-        st.markdown("**Selected variant RGB histogram**")
-        st.line_chart(histogram_frame(analysis_result))
-
-    m1, m2, m3, m4 = st.columns(4)
-    m1.metric("Original size", f"{original.width} × {original.height}")
-    m2.metric("Output size", f"{analysis_result.width} × {analysis_result.height}")
-    m3.metric("Mean absolute error", f"{mae(original, analysis_result):.2f}")
-    m4.metric(
-        "PSNR",
-        "∞" if np.isinf(psnr(original, analysis_result)) else f"{psnr(original, analysis_result):.2f} dB",
+    hist = rgb_histogram(original).reshape(3, 32)
+    hist_df = pd.DataFrame(
+        hist.T,
+        columns=["Red", "Green", "Blue"]
     )
+    st.line_chart(hist_df)
 
-    st.info(
-        "These numerical metrics describe pixel-level difference from the input. "
-        "They do not establish whether an augmentation improves a machine-learning model."
-    )
-
-with st.expander("📚 Academic scope and limitations"):
     st.markdown(
         """
-        **Covered in this demonstration:** image-space transformations, colour-space
-        transformations, kernel/filter operations, random erasing and simple image mixing.
+        ### Interpretation boundary
 
-        **Discussed in the survey but not implemented as claims of reproduction here:**
-        feature-space augmentation, adversarial training, GAN-based augmentation,
-        neural style transfer and meta-learning.
+        Pixel-level diagnostics quantify **how much an image changed**. They do not
+        establish whether the transformed image is semantically valid, whether a
+        class label remains correct, or whether a CNN will generalise better.
 
-        The application is therefore a practical visual demonstration rather than a
-        reproduction of the survey's experiments. Any reported accuracy/error values
-        from the paper should be cited as literature results, not as results produced
-        by this application.
+        For a genuine machine-learning performance study, the generated data should
+        be evaluated with a fixed model architecture, controlled train/validation/test
+        split, repeated random seeds, confidence intervals and task-specific metrics.
+        This distinction is important because augmentation quality is dataset- and
+        task-dependent.
+        """
+    )
+
+with st.expander("📚 Research scope and relation to the survey"):
+    st.markdown(
+        """
+        The source survey organises image augmentation around **data warping** and
+        **oversampling** and discusses geometric transformations, colour-space
+        transformations, kernel filters, image mixing, random erasing, feature-space
+        augmentation, adversarial training, GAN-based augmentation, neural style
+        transfer and meta-learning.
+
+        This laboratory implements a substantial subset of image-space techniques and
+        adds experimental infrastructure for reproducibility, stochastic policies,
+        sensitivity analysis and controlled dataset generation.
+
+        The policy-search module is an **experimental engineering extension**. It is
+        not presented as a reproduction of AutoAugment, GAN training, adversarial
+        training, or the numerical experiments reported in the survey.
         """
     )
