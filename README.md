@@ -7,16 +7,19 @@
 
 <p align="center">
   <a href="https://github.com/Dinakarnayak/Image-Data-Augmentation-Tech-Review">GitHub</a> ·
-  <a href="https://colab.research.google.com/github/Dinakarnayak/Image-Data-Augmentation-Tech-Review/blob/main/notebooks/Image_Data_Augmentation_Research_Lab_Colab.ipynb">Google Colab</a>
+  <a href="https://colab.research.google.com/github/Dinakarnayak/Image-Data-Augmentation-Tech-Review/blob/main/notebooks/Image_Data_Augmentation_Research_Lab_Colab.ipynb">Google Colab</a> ·
+  <a href="https://doi.org/10.1186/s40537-019-0197-0">Research Paper (DOI)</a>
 </p>
 
 ---
 
 ## 📚 Research basis
 
-This repository is built around:
+This repository is built around the following peer-reviewed survey paper:
 
 > **Shorten, C. & Khoshgoftaar, T. M. (2019). _A survey on Image Data Augmentation for Deep Learning_. Journal of Big Data, 6, 60.**
+
+🔗 **[Read the original research paper](https://doi.org/10.1186/s40537-019-0197-0)**
 
 The project is an **experimental companion to the survey**, not a claim to reproduce every method or numerical result reported in the paper.
 
@@ -138,6 +141,7 @@ Image-Data-Augmentation-Tech-Review/
 ├── app.py
 ├── requirements.txt
 ├── README.md
+├── ABOUT.md
 ├── LICENSE
 ├── CITATION.cff
 ├── CONTRIBUTING.md
@@ -208,9 +212,9 @@ For the accompanying technical review, distinguish:
 
 ## 📖 Reference
 
-Shorten, C., & Khoshgoftaar, T. M. (2019). *A survey on Image Data Augmentation for Deep Learning*. **Journal of Big Data, 6**, 60.
+**Shorten, C., & Khoshgoftaar, T. M. (2019). _A survey on Image Data Augmentation for Deep Learning_. Journal of Big Data, 6, 60.**
 
-**DOI:** 10.1186/s40537-019-0197-0
+🔗 **[Original paper — Springer / Journal of Big Data](https://doi.org/10.1186/s40537-019-0197-0)**
 
 ---
 
