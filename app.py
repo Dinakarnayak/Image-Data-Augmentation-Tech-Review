@@ -1,6 +1,8 @@
 import io
 import json
 import zipfile
+import hashlib
+from datetime import datetime, timezone
 from dataclasses import dataclass, asdict
 from typing import Dict, List, Tuple
 
@@ -345,6 +347,7 @@ tabs = st.tabs([
     "🧬 Policy search",
     "📈 Sensitivity",
     "📦 Dataset generator",
+    "🧪 Experiment matrix",
     "🔬 Diagnostics",
 ])
 
@@ -634,9 +637,125 @@ with tabs[4]:
         )
 
 # ---------------------------------------------------------------------------
-# Diagnostics
+# Experiment matrix
 # ---------------------------------------------------------------------------
 with tabs[5]:
+    st.subheader("🧪 Controlled experiment matrix")
+    st.write(
+        "Run the same image through multiple augmentation families under a fixed "
+        "parameter protocol. Results are image-level diagnostics, not model-accuracy evidence."
+    )
+
+    selected_ops = st.multiselect(
+        "Operations to compare",
+        ALL_OPERATIONS,
+        default=[
+            "Horizontal flip", "Rotation", "Brightness",
+            "Contrast", "Gaussian blur", "Random erasing",
+        ],
+    )
+    repetitions = st.slider("Repetitions per operation", 1, 20, 5)
+    matrix_seed = st.number_input("Experiment seed", 0, 999999, 2026, key="matrix_seed")
+
+    if st.button("Run controlled comparison", type="primary"):
+        rows = []
+        base_rng = np.random.default_rng(matrix_seed)
+
+        for operation in selected_ops:
+            for repetition in range(repetitions):
+                seed = int(base_rng.integers(0, 10_000_000))
+
+                if operation == "Horizontal flip" or operation == "Vertical flip":
+                    params = {}
+                elif operation == "Rotation":
+                    params = {"degrees": 30.0}
+                elif operation == "Translation":
+                    params = {"x": 25, "y": 25}
+                elif operation == "Shear":
+                    params = {"x": 0.15, "y": 0.0}
+                elif operation == "Crop + resize":
+                    params = {"fraction": 0.8}
+                elif operation in {"Brightness", "Contrast", "Saturation"}:
+                    params = {"value": 1.25}
+                elif operation == "Sharpness":
+                    params = {"value": 1.5}
+                elif operation == "Grayscale" or operation == "Invert":
+                    params = {}
+                elif operation == "Solarize":
+                    params = {"threshold": 128}
+                elif operation == "Posterize":
+                    params = {"bits": 4}
+                elif operation in {"Blur", "Sharpen", "Edge enhance", "Emboss", "Edge kernel"}:
+                    params = {}
+                elif operation == "Gaussian blur":
+                    params = {"radius": 2.0}
+                elif operation == "Random erasing":
+                    params = {"area": 10.0, "seed": seed, "fill_mode": "random"}
+                else:
+                    params = {}
+
+                output = apply_operation(original, operation, params)
+                rows.append({
+                    "operation": operation,
+                    "repetition": repetition + 1,
+                    "seed": seed,
+                    **diagnostics(original, output),
+                })
+
+        st.session_state["experiment_matrix"] = pd.DataFrame(rows)
+
+    if "experiment_matrix" in st.session_state:
+        matrix_df = st.session_state["experiment_matrix"]
+        summary = (
+            matrix_df.groupby("operation")
+            .agg(
+                MAE_mean=("MAE", "mean"),
+                MAE_std=("MAE", "std"),
+                PSNR_mean=("PSNR_dB", "mean"),
+                histogram_mean=("Histogram_distance", "mean"),
+                edge_delta_mean=("Edge_density_delta", "mean"),
+            )
+            .reset_index()
+            .fillna(0)
+        )
+
+        st.markdown("### Summary statistics")
+        st.dataframe(summary, use_container_width=True, hide_index=True)
+        st.markdown("### Mean image-change magnitude")
+        st.bar_chart(summary.set_index("operation")["MAE_mean"])
+        st.markdown("### Repeated-run observations")
+        st.dataframe(matrix_df, use_container_width=True, hide_index=True)
+
+        experiment_id = hashlib.sha256(
+            matrix_df.to_csv(index=False).encode("utf-8")
+        ).hexdigest()[:12]
+        metadata = {
+            "experiment_id": experiment_id,
+            "created_utc": datetime.now(timezone.utc).isoformat(),
+            "seed": int(matrix_seed),
+            "repetitions": int(repetitions),
+            "image_size": list(original.size),
+            "note": "Image-level diagnostics only; no model-performance claim.",
+        }
+
+        st.code(json.dumps(metadata, indent=2), language="json")
+        st.download_button(
+            "📊 Download experiment matrix CSV",
+            matrix_df.to_csv(index=False).encode("utf-8"),
+            "experiment_matrix.csv",
+            "text/csv",
+        )
+        st.download_button(
+            "🧾 Download experiment metadata JSON",
+            json.dumps(metadata, indent=2),
+            "experiment_metadata.json",
+            "application/json",
+        )
+
+# ---------------------------------------------------------------------------
+# Diagnostics
+# ---------------------------------------------------------------------------
+with tabs[6]:
     st.subheader("Research diagnostics and interpretation")
 
     arr = np.asarray(original.resize((256, 256)))
