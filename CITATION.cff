@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+title: "Image Data Augmentation — Paper-Based Research Companion"
+message: "If you use this repository, please cite the source paper and this companion repository."
+type: software
+authors:
+  - family-names: Nayak
+    given-names: Dinakar
+repository-code: "https://github.com/Dinakarnayak/Image-Data-Augmentation-Tech-Review"
+license: MIT
+keywords:
+  - image data augmentation
+  - deep learning
+  - computer vision
+  - data augmentation
+  - reproducible research
+references:
+  - type: article
+    authors:
+      - family-names: Shorten
+        given-names: Connor
+      - family-names: Khoshgoftaar
+        given-names: Taghi M.
+    title: "A survey on Image Data Augmentation for Deep Learning"
+    journal: "Journal of Big Data"
+    year: 2019
+    volume: 6
+    article: 60
+    doi: "10.1186/s40537-019-0197-0"
