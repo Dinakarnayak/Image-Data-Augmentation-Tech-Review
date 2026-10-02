@@ -118,3 +118,25 @@ streamlit run app.py
 ## Licence
 
 MIT
+
+
+## ☁️ Google Colab
+
+A reproducible Google Colab notebook is included:
+
+**Notebook:** `notebooks/Image_Data_Augmentation_Research_Lab_Colab.ipynb`
+
+Open it directly in Google Colab:
+
+https://colab.research.google.com/github/Dinakarnayak/Image-Data-Augmentation-Tech-Review/blob/main/notebooks/Image_Data_Augmentation_Research_Lab_Colab.ipynb
+
+The Colab notebook demonstrates:
+
+- geometric transformations
+- colour-space augmentation
+- random erasing
+- pixel-level diagnostics
+- reproducible random seeds
+- experiment tables and visualisation
+
+For the complete interactive research laboratory, use `app.py` locally or deploy the Streamlit application.
