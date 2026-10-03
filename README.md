@@ -29,20 +29,26 @@ The survey discusses geometric transformations, colour-space transformations, ke
 
 ## 📄 Final Technical Review
 
-The completed CO7091 Technology Review is included in the repository:
-
 **[Image Data Augmentation — Final Technical Review](reports/Image_Data_Augmentation_Tech_Review_Final.md)**
 
-The report covers:
-- overfitting and the role of augmentation;
-- the ten augmentation approaches discussed by Shorten & Khoshgoftaar;
-- advantages and limitations of each category;
-- selected quantitative evidence from Caltech101, CIFAR-10 and liver-lesion experiments;
-- methodological limitations and comparability;
-- image-space diagnostics versus model-performance evidence;
-- reproducibility and experimental interpretation boundaries.
+Covers overfitting, the ten augmentation approaches, advantages and limitations, quantitative evidence, methodological limitations, image-space diagnostics, reproducibility and experimental interpretation.
 
-The report also documents the distinction between literature evidence, repository implementation and new experimental extensions.
+### 📑 Final With Images Version
+
+**[CO3091 Tech Review — Final With Images](reports/CO3091_TechReview_FINAL_WITH_IMAGES.md)**
+
+This version preserves the content and visual structure of the uploaded 3-page final report, including:
+
+- the augmentation taxonomy;
+- overfitting/convergence figures;
+- colour-space augmentation examples;
+- PatchShuffle example;
+- advantages/limitations table;
+- selected experimental evidence table;
+- critical evaluation;
+- appendix describing the research laboratory.
+
+The uploaded PDF is the authoritative visual version; the repository Markdown version records its report content and visual inventory.
 
 ---
 
@@ -96,7 +102,7 @@ LITERATURE COMPARISON
 
 ## 🧪 Experiment Matrix
 
-The application now supports controlled image-level comparisons across selected augmentation operations.
+The application supports controlled image-level comparisons across selected augmentation operations.
 
 It can:
 - run repeated experiments;
@@ -167,7 +173,8 @@ Image-Data-Augmentation-Tech-Review/
 │   └── Image_Data_Augmentation_Research_Lab_Colab.ipynb
 │
 ├── reports/
-│   └── Image_Data_Augmentation_Tech_Review_Final.md
+│   ├── Image_Data_Augmentation_Tech_Review_Final.md
+│   └── CO3091_TechReview_FINAL_WITH_IMAGES.md
 │
 ├── experiments/
 │   └── README.md
