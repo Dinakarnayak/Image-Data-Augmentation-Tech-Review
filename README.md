@@ -245,6 +245,10 @@ For the accompanying technical review, distinguish:
 
 🔗 **[Original paper — Springer / Journal of Big Data](https://doi.org/10.1186/s40537-019-0197-0)**
 
+**Overleaf project:** [CO3091 Tech Review — Final Overleaf Project](https://www.overleaf.com/read/ccqndfwgnwpc#edb08e)
+
+The Overleaf project is also listed as a formal reference in the IEEE LaTeX source.
+
 ---
 
 <p align="center">
