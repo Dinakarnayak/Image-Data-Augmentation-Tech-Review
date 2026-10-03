@@ -37,6 +37,8 @@ Covers overfitting, the ten augmentation approaches, advantages and limitations,
 
 **[CO3091 Tech Review — Final With Images](reports/CO3091_TechReview_FINAL_WITH_IMAGES.md)**
 
+**[IEEE LaTeX source — Final With Images](reports/CO3091_TechReview_FINAL_WITH_IMAGES.tex)**
+
 This version preserves the content and visual structure of the uploaded 3-page final report, including:
 
 - the augmentation taxonomy;
