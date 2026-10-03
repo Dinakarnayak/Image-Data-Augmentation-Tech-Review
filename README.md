@@ -27,6 +27,25 @@ The survey discusses geometric transformations, colour-space transformations, ke
 
 ---
 
+## 📄 Final Technical Review
+
+The completed CO7091 Technology Review is included in the repository:
+
+**[Image Data Augmentation — Final Technical Review](reports/Image_Data_Augmentation_Tech_Review_Final.md)**
+
+The report covers:
+- overfitting and the role of augmentation;
+- the ten augmentation approaches discussed by Shorten & Khoshgoftaar;
+- advantages and limitations of each category;
+- selected quantitative evidence from Caltech101, CIFAR-10 and liver-lesion experiments;
+- methodological limitations and comparability;
+- image-space diagnostics versus model-performance evidence;
+- reproducibility and experimental interpretation boundaries.
+
+The report also documents the distinction between literature evidence, repository implementation and new experimental extensions.
+
+---
+
 ## 🚀 What the project provides
 
 | Module | Purpose |
@@ -80,7 +99,6 @@ LITERATURE COMPARISON
 The application now supports controlled image-level comparisons across selected augmentation operations.
 
 It can:
-
 - run repeated experiments;
 - record random seeds;
 - calculate MSE, MAE and PSNR;
@@ -116,7 +134,6 @@ Newly generated results must not be presented as results from the source paper.
 ## 📊 Reproducibility
 
 Record, where applicable:
-
 - dataset and version;
 - train/validation/test split;
 - model architecture;
@@ -148,6 +165,9 @@ Image-Data-Augmentation-Tech-Review/
 │
 ├── notebooks/
 │   └── Image_Data_Augmentation_Research_Lab_Colab.ipynb
+│
+├── reports/
+│   └── Image_Data_Augmentation_Tech_Review_Final.md
 │
 ├── experiments/
 │   └── README.md
